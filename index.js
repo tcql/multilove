@@ -60,8 +60,9 @@ Multilove.prototype._read = function (size) {
  */
 Multilove.prototype.findWritable = function(wanted) {
   for (var i = wanted; i < this.writeStreams.length + wanted; i++) {
-    if (this.writeStates[i % this.writeStreams.length] === true) 
+    if (this.writeStates[i % this.writeStreams.length] === true) {
       return i % this.writeStreams.length;
+    }
   }
   return false;
 };
@@ -97,7 +98,7 @@ Multilove.prototype._write = function(chunk, encoding, done) {
     }   
 
     // cycle to the next id.
-    writeNext = (writeId + 1) % this.writeStreams.length;
+    this.writeNext = (writeId + 1) % this.writeStreams.length;
     done();
 
     return true;
