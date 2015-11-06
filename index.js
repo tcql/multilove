@@ -37,6 +37,13 @@ function Multilove(options, writeStreams, readStreams) {
   for (var i = 0; i < this.readStreams.length; i++) {
     this.readStreams[i].pipe(this.outputStream);
   }
+
+  this.outputStream.on('data', function (data) {
+    self.emit('data', data);
+  });
+  this.outputStream.on('end', function () {
+    self.emit('end');
+  })
 }
 
 /**
