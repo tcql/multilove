@@ -3,11 +3,11 @@ var util = require('util');
 var streams = require('stream');
 var EventEmitter = require('events');
 
-util.inherits(Multilove, streams.Writable);
+util.inherits(Multilove, streams.Duplex);
 
 function Multilove(options, writeStreams, readStreams) {  
   var self = this;
-  streams.Writable.call(this, options);
+  streams.Duplex.call(this, options);
 
   this.readable = true;
 
@@ -18,6 +18,7 @@ function Multilove(options, writeStreams, readStreams) {
     done(null, chunk);
   });
 
+  this.streamsEnded = 0;
   this.writeStreams = writeStreams; // list of writables under our control
   this.readStreams = readStreams || []; // list of readable streams that we'll pipe to `outputStream`
   this.writeNext = 0; // the index of the writable to try writing to next
@@ -41,9 +42,10 @@ function Multilove(options, writeStreams, readStreams) {
   this.outputStream.on('data', function (data) {
     self.emit('data', data);
   });
+
   this.outputStream.on('end', function () {
     self.emit('end');
-  })
+  });
 }
 
 /**
@@ -78,6 +80,20 @@ Multilove.prototype.findWritable = function(wanted) {
 Multilove.prototype._write = function(chunk, encoding, done) {
   var self = this;
   var writeId = this.findWritable(this.writeNext);
+
+  if (chunk.toString() === '' || chunk.toString === null) {
+    // for each writeStream, end it.
+    for (var i = 0; i < this.writeStates.length; i++) {
+      if (this.writeStates[i] === true) {
+        this.writeStreams[i].end();
+      }
+    }
+    // End any children still waiting to drain when they finish
+    this.on('child-writable', function (id) {
+      self.writeStreams[id].end();
+    });
+    return done();
+  }
 
   if (writeId === false) {
     this.locked = true;
