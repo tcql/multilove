@@ -14,14 +14,26 @@ module.exports = function (opts) {
   }, opts);
 
   var workers = [];
-  var maxWorkers = Math.min(options.workers, cpus);
+  var maxWorkers = Math.min(options.workers || Infinity, cpus);
   var ready = 0;
+  var started = false;
 
   options.outputStream.setMaxListeners(0);
   options.errorStream.setMaxListeners(0);
 
+  // Core Options that are serialized to send to
+  // the worker.
+  var coreOptions = JSON.stringify({
+    worker: path.resolve(options.worker),
+    map: path.resolve(options.map)
+  });
+
+  // User Options that are serialized, which may be used
+  // by custom MultiloveWorkers
+  var userOptions = JSON.stringify(xtend({}, options.workerOptions));
+
   for (var i = 0; i < maxWorkers; i++) {
-    var worker = fork(path.join(__dirname, 'lib/worker.js'),[path.resolve(options.worker), path.resolve(options.map)], {silent: true});
+    var worker = fork(path.join(__dirname, 'lib/worker.js'),[coreOptions, userOptions], {silent: true});
     worker.ready = false;
     worker.free = true;
     worker.stdout.pipe(binarysplit('\x1e')).pipe(options.outputStream);
@@ -38,8 +50,10 @@ module.exports = function (opts) {
   };
 
   var sendToWorker = function (worker, stream, chunk, done) {
+    stream.emit('map', chunk);
     worker.once('message', function (message) {
       worker.free = true;
+      stream.push(message);
       stream.emit('reduce', message, chunk);
       done();
     });
@@ -47,6 +61,10 @@ module.exports = function (opts) {
   };
 
   var stream = par(maxWorkers, function (chunk, done) {
+    if (!started) {
+      started = true;
+      stream.emit('start');
+    }
     var w = firstFree();
     if (w < 0) {
       // This shouldn't happen unless there's a serious internal bug
@@ -64,7 +82,6 @@ module.exports = function (opts) {
       // writing data to them. So we'll wait for that and let the stream
       // back up a bit until it's ready.
       worker.once('message', function () {
-        stream.emit('map', chunk);
         sendToWorker(worker, stream, chunk, done);
       });
     } else {
@@ -72,5 +89,15 @@ module.exports = function (opts) {
     }
   });
 
+  // cleanup after it's destroyed
+  stream.on('close', function () {
+    while (workers.length) workers.pop().kill();
+  });
+
+  stream.options = options;
+  stream.workers = workers;
+
   return stream;
 };
+
+// module.exports.MultiLoveWorker = require()
