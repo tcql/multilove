@@ -51,12 +51,22 @@ module.exports = function (opts) {
 
   var sendToWorker = function (worker, stream, chunk, done) {
     stream.emit('map', chunk);
-    worker.once('message', function (message) {
-      worker.free = true;
-      stream.push(message);
-      stream.emit('reduce', message, chunk);
-      done();
-    });
+    var listener = function (message) {
+      if (message.type !== 'push') {
+        worker.free = true;
+
+        if (message.type === 'done') stream.emit('reduce', message.msg, chunk);
+        if (message.type === 'error') stream.emit('error', message.msg);
+
+        worker.removeListener('message', listener);
+        done();
+      } else {
+        stream.push(message.msg);
+      }
+    };
+
+    worker.on('message', listener);
+
     worker.send(chunk);
   };
 
