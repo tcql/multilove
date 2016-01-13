@@ -1,0 +1,105 @@
+'use strict';
+
+var test = require('tap').test,
+  worker = require('../lib/work-handler'),
+  Emitter = require('events');
+
+test('work-handler -- extend', function (t) {
+  var custom = worker.extend({
+    callMap: function () {
+      return 5;
+    }
+  });
+
+  t.equal(custom.callMap(), 5, 'new method overrides original');
+  t.notEqual(custom.callMap, worker.callMap, 'original was not mutated');
+  t.end();
+});
+
+test('work-handler -- done sends messages', function (t) {
+  var lastSent = null;
+
+  var bus = {
+    send: function (message) {
+      lastSent = message;
+    },
+    on: function () {}
+  };
+  worker._install(bus, {}, {});
+
+  worker.done(null, 'Success, Data');
+  t.deepEqual({type: 'done', msg: 'Success, Data'}, lastSent, 'properly sends "done" message');
+
+  worker.done('Error Occurred', null);
+  t.deepEqual({type: 'error', msg: 'Error Occurred'}, lastSent, 'properly sends "error" message');
+  t.end();
+});
+
+test('work-handler -- on message, map is called', function (t) {
+  var mapCalled = 0;
+  var mappedData = null;
+  var custom = worker.extend({
+    map: function (data, w) {
+      mapCalled++;
+      mappedData = data;
+      w.done();
+    },
+    done: function () {
+      t.equal(mapCalled, 1, 'map should have been called once');
+      t.equal(mappedData, '42!', 'map was passed original message that was emitted');
+      t.end();
+    }
+  });
+  var bus = new Emitter();
+  bus.send = function () {};
+
+  custom._install(bus, {}, {});
+  bus.emit('message', '42!');
+});
+
+test('work-handler -- on map error, error message is sent via bus', function (t) {
+  var custom = worker.extend({
+    map: function () {
+      throw new Error('This is the error message');
+    }
+  });
+
+  var bus = new Emitter();
+  bus.send = function (message) {
+    if (message.type === 'ready') return;
+    t.deepEqual({type: 'error', msg: new Error('This is the error message')}, message, 'proper error message is propagated to bus');
+    t.end();
+  };
+
+  custom._install(bus, {}, {});
+  custom.callMap('some data');
+});
+
+test('work-handler -- push sends push data via bus', function (t) {
+  var pushes = [];
+  var custom = worker.extend({
+    map: function (data, w) {
+      w.push(1);
+      w.push({value: 2});
+      w.done();
+    }
+  });
+
+  var bus = new Emitter();
+  bus.send = function (message) {
+    if (message.type === 'push') {
+      pushes.push(message);
+    }
+    if (message.type === 'done') {
+      t.equal(pushes.length, 2, 'two items were pushed');
+      t.deepEqual([
+        {type: 'push', msg: 1},
+        {type: 'push', msg: {value: 2}}
+      ], pushes, 'the correct items were pushed');
+      t.end();
+    }
+  };
+
+  custom._install(bus, {}, {});
+  custom.callMap('some data');
+});

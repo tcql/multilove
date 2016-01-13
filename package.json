@@ -2,13 +2,52 @@
   "name": "multilove",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "main": "lib/multilove.js",
+  "directories": {
+    "example": "examples"
   },
-  "author": "Tim Channell",
-  "license": "ISC",
   "dependencies": {
-    "through2": "^2.0.0"
-  }
+    "binary-split": "^1.0.0",
+    "parallel-transform": "^0.2.2",
+    "request": "^2.65.0",
+    "split": "^1.0.0",
+    "stream-array": "^1.1.1",
+    "through2": "^2.0.0",
+    "xtend": "^4.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^1.10.3",
+    "eslint-config-mourner": "^1.0.1",
+    "tap": "^5.0.1"
+  },
+  "scripts": {
+    "pretest": "npm run lint",
+    "lint": "eslint lib/*.js test/*.test.js",
+    "test": "tap -Rspec test/*.test.js"
+  },
+  "eslintConfig": {
+    "extends": "mourner",
+    "rules": {
+      "strict": [
+        1
+      ],
+      "indent": [
+        2,
+        2,
+        {
+          "SwitchCase": 1
+        }
+      ]
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcql/multilove.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tcql/multilove/issues"
+  },
+  "homepage": "https://github.com/tcql/multilove#readme"
 }
