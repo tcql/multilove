@@ -1,7 +1,7 @@
 'use strict';
 
 var test = require('tap').test,
-  worker = require('../lib/work-handler'),
+  worker = require('../lib/worker'),
   Emitter = require('events');
 
 test('work-handler -- extend', function (t) {
