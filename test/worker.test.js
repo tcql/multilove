@@ -52,7 +52,6 @@ test('work-handler -- on message, map is called', function (t) {
   });
   var bus = new Emitter();
   bus.send = function () {};
-
   custom._install(bus, {}, {});
   bus.emit('message', '42!');
 });
