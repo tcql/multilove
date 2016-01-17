@@ -23,7 +23,7 @@
     "through2": "^2.0.0"
   },
   "scripts": {
-    "bench": "node benchmark/benchmark.js"
+    "bench": "node benchmark/benchmark.js",
     "pretest": "npm run lint",
     "lint": "eslint lib/*.js test/*.test.js",
     "test": "tap -Rspec test/*.test.js"
