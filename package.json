@@ -16,11 +16,14 @@
     "xtend": "^4.0.1"
   },
   "devDependencies": {
+    "benchmark": "^2.0.0",
     "eslint": "^1.10.3",
     "eslint-config-mourner": "^1.0.1",
-    "tap": "^5.0.1"
+    "tap": "^5.0.1",
+    "through2": "^2.0.0"
   },
   "scripts": {
+    "bench": "node benchmark/benchmark.js"
     "pretest": "npm run lint",
     "lint": "eslint lib/*.js test/*.test.js",
     "test": "tap -Rspec test/*.test.js"
