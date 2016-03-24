@@ -16,7 +16,7 @@ test('work-handler -- extend', function (t) {
   t.end();
 });
 
-test('work-handler -- done sends messages', function (t) {
+test('work-handler -- `done` sends data messages', function (t) {
   var lastSent = null;
 
   var bus = {
@@ -28,7 +28,7 @@ test('work-handler -- done sends messages', function (t) {
   worker._install(bus, {}, {});
 
   worker.done(null, 'Success, Data');
-  t.deepEqual(lastSent, {type: 'done', msg: 'Success, Data'}, 'properly sends "done" message');
+  t.deepEqual(lastSent, {type: 'data', msg: 'Success, Data'}, 'properly sends "data" message');
 
   worker.done('Error Occurred', null);
   t.deepEqual(lastSent, {
@@ -49,17 +49,18 @@ test('work-handler -- on message, map is called', function (t) {
       mapCalled++;
       mappedData = data;
       w.done();
-    },
-    done: function () {
+    }
+  });
+  var bus = new Emitter();
+  bus.send = function (message) {
+    if (message.type === 'doneBatch') {
       t.equal(mapCalled, 1, 'map should have been called once');
       t.equal(mappedData, '42!', 'map was passed original message that was emitted');
       t.end();
     }
-  });
-  var bus = new Emitter();
-  bus.send = function () {};
+  };
   custom._install(bus, {}, {});
-  bus.emit('message', '42!');
+  bus.emit('message', ['42!']);
 });
 
 test('work-handler -- on map error, error message is sent via bus', function (t) {
@@ -72,13 +73,14 @@ test('work-handler -- on map error, error message is sent via bus', function (t)
 
   var bus = new Emitter();
   bus.send = function (message) {
-    if (message.type === 'ready') return;
-    t.deepEqual({type: 'error', msg: {message: e.toString(), stack: e.stack}}, message, 'proper error message is propagated to bus');
-    t.end();
+    if (message.type === 'error') {
+      t.deepEqual({type: 'error', msg: {message: e.toString(), stack: e.stack}}, message, 'proper error message is propagated to bus');
+      t.end();
+    }
   };
 
   custom._install(bus, {}, {});
-  custom.callMap('some data');
+  custom.callMap(['some data']);
 });
 
 test('work-handler -- push sends push data via bus', function (t) {
@@ -96,16 +98,18 @@ test('work-handler -- push sends push data via bus', function (t) {
     if (message.type === 'push') {
       pushes.push(message);
     }
-    if (message.type === 'done') {
+    if (message.type === 'data') {
       t.equal(pushes.length, 2, 'two items were pushed');
       t.deepEqual([
         {type: 'push', msg: 1},
         {type: 'push', msg: {value: 2}}
       ], pushes, 'the correct items were pushed');
+    }
+    if (message.type === 'doneBatch') {
       t.end();
     }
   };
 
   custom._install(bus, {}, {});
-  custom.callMap('some data');
+  custom.callMap(['some data']);
 });

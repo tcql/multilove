@@ -33,15 +33,23 @@ stream.on('data', function (data) {
 ```js
 // map.js
 module.exports = function (data, worker) {
-  data.forEach(function (item) {
-    var result = // Do some work with the item
-    worker.push(result); // Will send results back to the main multilove stream.
-                         // `push` can be called multiple times.
-  });
+  var result = // Do some work with the data
+  worker.push(result); // Will send results back to the main multilove stream.
+                       // `push` can be called multiple times.
+
   worker.done();
 }
 
 ```
+
+#### Options
+
+- `worker` - path to worker
+- `workers` - number of workers to spawn. Defaults to `require('os').cpus().length`
+- `outputStream` - stream to output `console.log` data from workers to. Defaults to  `process.stdout`
+- `errorStream` - stream to output `console.error` data from workers to. Defaults to `process.stderr`
+- `batchSize` - number of records to send concurrently to each worker. Defaults to `1`
+
 
 #### Extending the worker
 
@@ -62,11 +70,10 @@ module.exports = base.extend({
 
   // the function that will be executed on each piece of data
   map: function (data, worker) {
-    data.forEach(function (item) {
-      var result = // Do some work with the item
-      worker.push(result); // Will send results back to the main multilove stream.
-                           // `push` can be called multiple times.
-    });
+    var result = // Do some work with the data
+    worker.push(result); // Will send results back to the main multilove stream.
+                         // `push` can be called multiple times.
+
     worker.done();
   }
 });
