@@ -42,6 +42,9 @@ module.exports = function (data, worker) {
 
 ```
 
+Data will be batched and sent to worker processes. Data sent via `worker.push` will be returned to the main process and pushed onto the stream.
+
+
 #### Options
 
 - `worker` - path to worker
