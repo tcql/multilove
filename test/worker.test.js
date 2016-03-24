@@ -28,10 +28,16 @@ test('work-handler -- done sends messages', function (t) {
   worker._install(bus, {}, {});
 
   worker.done(null, 'Success, Data');
-  t.deepEqual({type: 'done', msg: 'Success, Data'}, lastSent, 'properly sends "done" message');
+  t.deepEqual(lastSent, {type: 'done', msg: 'Success, Data'}, 'properly sends "done" message');
 
   worker.done('Error Occurred', null);
-  t.deepEqual({type: 'error', msg: 'Error Occurred'}, lastSent, 'properly sends "error" message');
+  t.deepEqual(lastSent, {
+    type: 'error',
+    msg: {
+      message: 'Error Occurred',
+      stack: null
+    }
+  }, 'properly sends "error" message');
   t.end();
 });
 
@@ -57,16 +63,17 @@ test('work-handler -- on message, map is called', function (t) {
 });
 
 test('work-handler -- on map error, error message is sent via bus', function (t) {
+  var e = new Error('This is the error message');
   var custom = worker.extend({
     map: function () {
-      throw new Error('This is the error message');
+      throw e;
     }
   });
 
   var bus = new Emitter();
   bus.send = function (message) {
     if (message.type === 'ready') return;
-    t.deepEqual({type: 'error', msg: new Error('This is the error message')}, message, 'proper error message is propagated to bus');
+    t.deepEqual({type: 'error', msg: {message: e.toString(), stack: e.stack}}, message, 'proper error message is propagated to bus');
     t.end();
   };
 

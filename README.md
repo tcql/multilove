@@ -33,9 +33,11 @@ stream.on('data', function (data) {
 ```js
 // map.js
 module.exports = function (data, worker) {
-  var result = // Do some work with the data
-  worker.push(result); // Will send results back to the main multilove stream.
-                       // `push` can be called multiple times.
+  data.forEach(function (item) {
+    var result = // Do some work with the item
+    worker.push(result); // Will send results back to the main multilove stream.
+                         // `push` can be called multiple times.
+  });
   worker.done();
 }
 
@@ -43,7 +45,7 @@ module.exports = function (data, worker) {
 
 #### Extending the worker
 
-If your worker has to do additional work, such as initializing database connections, you can extend the multilove worker object in your `map` script:
+If your worker has to do additional work, such as initializing database connections before the map function can be called, you can extend the multilove worker object in your `map` script:
 
 ```js
 // map.js
@@ -60,11 +62,13 @@ module.exports = base.extend({
 
   // the function that will be executed on each piece of data
   map: function (data, worker) {
-    var result = // Do some work with the data
-    worker.push(result); // Will send results back to the main multilove stream.
-                         // `push` can be called multiple times.
+    data.forEach(function (item) {
+      var result = // Do some work with the item
+      worker.push(result); // Will send results back to the main multilove stream.
+                           // `push` can be called multiple times.
+    });
     worker.done();
   }
-})
+});
 ```
 
