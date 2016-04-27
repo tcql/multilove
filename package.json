@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "binary-split": "^1.0.0",
+    "d3-queue": "^2.0.3",
     "parallel-transform": "^0.2.2",
     "request": "^2.65.0",
     "through2": "^2.0.0",
